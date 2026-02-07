@@ -83,11 +83,11 @@ Upload code that was successfully generated and executed.
 | Field | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
 | `task` | string | yes | - | Natural language description of what the code does |
-| `files_written` | array | yes | - | List of files to cache |
-| `files_written[].path` | string | yes | - | Relative file path |
-| `files_written[].content` | string | yes | - | Full file content |
+| `file_written` | object | yes | - | File to cache |
+| `file_written.path` | string | yes | - | Relative file path |
+| `file_written.content` | string | yes | - | Full file content |
 | `succeeded` | bool | yes | - | Whether the code executed successfully |
-| `auto_vote` | bool | no | true | Automatically register a positive vote |
+| `use_raysurfer_ai_voting` | bool | no | true | Enable AI-powered voting on the uploaded code |
 
 ### Example Request
 
@@ -97,14 +97,11 @@ curl -s -X POST https://api.raysurfer.com/api/store/execution-result \
   -H "Content-Type: application/json" \
   -d '{
     "task": "Read a CSV file and plot a histogram with matplotlib",
-    "files_written": [
-      {
-        "path": "plot_histogram.py",
-        "content": "import pandas as pd\nimport matplotlib.pyplot as plt\n\ndf = pd.read_csv(\"data.csv\")\ndf[\"value\"].hist(bins=20)\nplt.savefig(\"histogram.png\")\n"
-      }
-    ],
-    "succeeded": true,
-    "auto_vote": true
+    "file_written": {
+      "path": "plot_histogram.py",
+      "content": "import pandas as pd\nimport matplotlib.pyplot as plt\n\ndf = pd.read_csv(\"data.csv\")\ndf[\"value\"].hist(bins=20)\nplt.savefig(\"histogram.png\")\n"
+    },
+    "succeeded": true
   }'
 ```
 
@@ -113,7 +110,9 @@ curl -s -X POST https://api.raysurfer.com/api/store/execution-result \
 ```json
 {
   "success": true,
-  "code_block_ids": ["550e8400-e29b-41d4-a716-446655440000"]
+  "code_blocks_stored": 1,
+  "message": "Storage queued for 1 code file",
+  "status_url": "/api/store/status/ert_xxx"
 }
 ```
 
@@ -122,7 +121,9 @@ curl -s -X POST https://api.raysurfer.com/api/store/execution-result \
 | Field | Type | Description |
 |-------|------|-------------|
 | `success` | bool | Whether the upload was accepted |
-| `code_block_ids` | string[] | IDs of the created code blocks |
+| `code_blocks_stored` | int | Number of code blocks stored |
+| `message` | string | Human-readable status message |
+| `status_url` | string | URL to poll for background task status |
 
 ---
 
@@ -135,6 +136,8 @@ Vote on a cached code block after using it.
 | Field | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
 | `code_block_id` | string | yes | - | ID of the code block being voted on |
+| `code_block_name` | string | yes | - | Name of the code block being voted on |
+| `code_block_description` | string | yes | - | Description of the code block being voted on |
 | `succeeded` | bool | yes | - | `true` for upvote (code worked), `false` for downvote (code failed) |
 | `task` | string | yes | - | Description of the task the code was used for |
 
@@ -146,6 +149,8 @@ curl -s -X POST https://api.raysurfer.com/api/store/cache-usage \
   -H "Content-Type: application/json" \
   -d '{
     "code_block_id": "550e8400-e29b-41d4-a716-446655440000",
+    "code_block_name": "csv-histogram-matplotlib",
+    "code_block_description": "Reads a CSV and plots a histogram",
     "succeeded": true,
     "task": "Read a CSV file and plot a histogram with matplotlib"
   }'
@@ -155,7 +160,9 @@ curl -s -X POST https://api.raysurfer.com/api/store/cache-usage \
 
 ```json
 {
-  "success": true
+  "success": true,
+  "vote_pending": true,
+  "message": "Cache usage recorded, voting queued"
 }
 ```
 
@@ -164,6 +171,8 @@ curl -s -X POST https://api.raysurfer.com/api/store/cache-usage \
 | Field | Type | Description |
 |-------|------|-------------|
 | `success` | bool | Whether the vote was recorded |
+| `vote_pending` | bool | Whether the vote is pending AI review |
+| `message` | string | Human-readable status message |
 
 ---
 

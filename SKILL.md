@@ -29,10 +29,13 @@ Follow this sequence for every coding task:
 
 Before writing any code, search for existing cached solutions.
 
+To also include community public snippets (crawled from GitHub), add the `X-Raysurfer-Public-Snips: true` header.
+
 ```bash
 curl -s -X POST https://api.raysurfer.com/api/retrieve/search \
   -H "Authorization: Bearer $RAYSURFER_API_KEY" \
   -H "Content-Type: application/json" \
+  -H "X-Raysurfer-Public-Snips: true" \
   -d '{"task": "<describe the task here>", "top_k": 5, "min_verdict_score": 0.3}'
 ```
 
@@ -44,15 +47,18 @@ The response contains:
       "code_block": {
         "id": "uuid",
         "name": "descriptive name",
+        "description": "what this code does",
         "source": "the actual code content",
         "language": "python"
       },
       "combined_score": 0.85,
+      "filename": "suggested_filename.py",
       "thumbs_up": 12,
       "thumbs_down": 1
     }
   ],
-  "total_found": 3
+  "total_found": 3,
+  "cache_hit": true
 }
 ```
 
@@ -85,7 +91,7 @@ After using cached code, report whether it worked:
 curl -s -X POST https://api.raysurfer.com/api/store/cache-usage \
   -H "Authorization: Bearer $RAYSURFER_API_KEY" \
   -H "Content-Type: application/json" \
-  -d '{"code_block_id": "<id from the match>", "succeeded": true, "task": "<the task description>"}'
+  -d '{"code_block_id": "<id from the match>", "code_block_name": "<name from the match>", "code_block_description": "<description from the match>", "succeeded": true, "task": "<the task description>"}'
 ```
 
 Set `succeeded` to `true` if the code ran correctly, `false` if it failed or needed significant changes.
@@ -100,16 +106,12 @@ curl -s -X POST https://api.raysurfer.com/api/store/execution-result \
   -H "Content-Type: application/json" \
   -d '{
     "task": "<describe what this code does>",
-    "files_written": [
-      {"path": "relative/path/to/file.py", "content": "<full file content>"},
-      {"path": "relative/path/to/other.py", "content": "<full file content>"}
-    ],
-    "succeeded": true,
-    "auto_vote": true
+    "file_written": {"path": "relative/path/to/file.py", "content": "<full file content>"},
+    "succeeded": true
   }'
 ```
 
-Only upload code that executed successfully. Set `auto_vote` to `true` to automatically register a positive vote.
+Only upload code that executed successfully. AI voting is enabled by default.
 
 ## Handling Arguments
 
